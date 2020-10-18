@@ -74,18 +74,17 @@ function addToWarehouse()
             $product['amount'] -= $amount;
             $warehouse = $redis->get('warehouse_' . $user['id'] . '_' . $product['id']);
             if (empty($warehouse)) {
-                $user['warehouse']++;
                 $act = $redis->multi()
                     ->set('user_' . $user['id'], json_encode($user, true))
                     ->set('product_' . $product['id'], json_encode($product, true))
                     ->set('warehouse_' . $user['id'] . '_' . $product['id'], $amount)
                     ->exec();
             } else {
-                $warehouse['count'] += $amount;
+                $warehouse += intval($amount);
                 $act = $redis->multi()
                     ->set('user_' . $user['id'], json_encode($user, true))
                     ->set('product_' . $product['id'], json_encode($product, true))
-                    ->set('warehouse_' . $user['id'] . '_' . $product['id'], $amount)
+                    ->set('warehouse_' . $user['id'] . '_' . $product['id'], $warehouse)
                     ->exec();
             }
             $redis->unwatch();
@@ -100,8 +99,22 @@ function addToWarehouse()
     }
 }
 
-function ownWarehouse()
-{
+function productsList() {
+    global $redis;
+    $productCount = $redis->get('productCount');
+    $one = false;
+    for ($i = 1; $i <= $productCount; $i++) {
+        $item = $redis->get('product_'.$i);
+        if (!empty($item)) {
+            $product = json_decode($redis->get('product_' . $i), true);
+            echo $product['name'] . ', ' . $product['price']. ", ". $product['amount'] . " vnt. \n";
+            $one = true;
+        }
+    }
+    if(!$one) echo "Iš pradžių pridėkite produktus \n";
+}
+
+function ownWarehouse() {
     global $redis, $user;
     $productCount = $redis->get('productCount');
     $one = false;
@@ -169,10 +182,11 @@ function ownWarehouse()
     if ($successfully) {
         echo "Operacijų sąrašas: \n";
         echo "1. Pridėti produktą \n";
-        echo "2. Gauti informacija apie produktą \n";
-        echo "3. Pridėti į savo sandėlį \n";
-        echo "4. Pažiūrėti savo sandėlį \n";
-        echo "5. Uždaryti programą \n";
+        echo "2. Produktų sarašas \n";
+        echo "3. Gauti informacija apie produktą \n";
+        echo "4. Pridėti produktą į savo sandėlį \n";
+        echo "5. Pažiūrėti savo sandėlį \n";
+        echo "6. Uždaryti programą \n";
         do {
             echo "Ką norite atlikti: \n";
             $action = readline("Operacijos skaičius: ");
@@ -181,6 +195,9 @@ function ownWarehouse()
                     addProduct();
                     break;
                 case '2':
+                    productsList();
+                    break;
+                case '3':
                     $product = findProduct(readline("Produkto pavadinimas: "));
                     if ($product) {
                         echo "Pavadinimas: " . $product['name'] . "\n";
@@ -190,14 +207,14 @@ function ownWarehouse()
                         echo "Toks produkas neegzistuoja! \n";
                     }
                     break;
-                case '3':
+                case '4':
                     addToWarehouse();
                     break;
-                case '4':
+                case '5':
                     ownWarehouse();
                     break;
             }
-        } while ($action !== '5');
+        } while ($action !== '6');
     } else {
         echo "Prisijungti nepavyko!";
     }
