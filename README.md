@@ -1,7 +1,7 @@
 # Redis
 
 ## Apie programa
-Esybės: user, product, sandėlis
+Esybės: user, product, sandėlis. <br>
 Kiekvienas vartotojas gali pridėti į savo sandėlį tam tikrą skaičius produktų, jeigu jų yra.
 
 ## Programoje galite:
